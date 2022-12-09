@@ -2,7 +2,7 @@
 
 ## Motivation
 
-Lasset exists because invalidating caches with deep dependencies is hard.
+Lasset exists because a dependency graph of assets.
 
 ## Usage
 
@@ -31,3 +31,21 @@ await assets.load('wall/WALL') // causes wall/WALL to be rebuilt but not brick/a
 assets.invalidate('brick/a') 
 await assets.load('wall/WALL') // causes brick/a and wall/WALL to be rebuilt but not brick/b
 ```
+
+## API
+
+### `new Lasset(offers?: Record<string, Loader>)`
+
+Constructs a Lasset instance that can be used to load offered asset types.
+
+### `offer(typeName: string, loader: Loader): void`
+
+Registers an asset type for loading later.
+
+### `load(typeName: string, target: string) : Promise<any>`
+
+Loads the targetted instance from the cache or builds it if missing.
+
+### `invalidate(typeName: string, target: string) : void`
+
+Invalidates the targetted record and any records that depend on it directly or indirectly.

@@ -34,18 +34,20 @@ await assets.load('wall/WALL') // causes brick/a and wall/WALL to be rebuilt but
 
 ## API
 
-### `new Lasset(offers?: Record<string, Loader>)`
+`new Lasset(offers?: Record<string, Loader>)`
 
 Constructs a Lasset instance that can be used to load offered asset types.
 
-### `offer(typeName: string, loader: Loader): void`
+`offer(typeName: string, loader: Loader): void`
 
 Registers an asset type for loading later.
 
-### `load(typeName: string, target: string) : Promise<any>`
+`load(cacheKey: string) : Promise<any>`
+`load(typeName: string, target: string): Promise<any>`
 
 Loads the targetted instance from the cache or builds it if missing.
 
-### `invalidate(typeName: string, target: string) : void`
+`invalidate(cacheKey: string): void`
+`invalidate(typeName: string, target: string): void`
 
 Invalidates the targetted record and any records that depend on it directly or indirectly.

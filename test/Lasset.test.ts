@@ -28,11 +28,31 @@ describe('Lasset', () => {
     expect(lowerA).to.equal('a')
   })
 
+  it('can use complex targets', async () => {
+    const l = new Lasset()
+    let count = 0
+    l.offer(
+      'fullName',
+      async ({ first, last }: { first: string; last: string }) => {
+        return first + ' ' + last + ++count
+      }
+    )
+
+    expect(
+      await l.load('fullName', { first: 'Allain', last: 'Lalonde' })
+    ).to.equal('Allain Lalonde1')
+
+    l.invalidate('fullName', { first: 'Allain', last: 'Lalonde' })
+    expect(
+      await l.load('fullName', { first: 'Allain', last: 'Lalonde' })
+    ).to.equal('Allain Lalonde2')
+  })
+
   it('can load using cacheKey', async () => {
     const l = new Lasset()
     l.offer('lower', async (name) => `${name}`)
 
-    const lowerA = await l.load('lower/a')
+    const lowerA = await l.load('lower', 'a')
     expect(lowerA).to.equal('a')
   })
 

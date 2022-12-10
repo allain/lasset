@@ -1,53 +1,39 @@
-# Lasset Caching and Asset System
+# Lasset
 
-## Motivation
-
-Lasset exists because a dependency graph of assets.
+Lasset exists because cache invalidation is hard especially when cache entries are interdependent.
 
 ## Usage
 
 ```javascript
 import {Lasset} from 'lasset'
 
-const assets = new Lasset()
-// offer a brick asset type that builds a single brick
-assets.offer('brick', async brickName => (`[${brickName}]`))
-
-// offer a wall asset type that builds a wall by loading brick assets and combining them
-assets.offer('wall', async (wallName, load) => {
-  const brickA = await load('brick/a')
-  const brickB = await load('brick/b')
-  return `${wallName} ${brickA} ${brickA}`
+// Create lasset that supports two asset factories brick and wall
+const assets = new Lasset({
+  // offer a brick asset type that builds a single brick
+  async brick({ name }) {
+    return `[${name}]`
+  },
+  // load a wall (and build needed bricks for it)
+  async wall({ name }, load) {
+    const brickA = await load({ type: 'brick', name: 'a' })
+    const brickB = await load({ type: 'brick', name: 'b' })
+    return `${name} ${brickA} ${brickB}`
+  }
 })
 
 // load a wall (and build needed bricks for it)
-const wall = await assets.load('wall/WALL')
-console.log(wall) // Outputs WALL [a] [b]
+const wall = await assets.load({ type: 'wall', name: 'WALL' })
+// or equivalently
+const wall2 = await assets.loaders.wall({ name: 'WALL' })
+
+console.log(wall) //  Outputs WALL [a] [b]
+console.log(wall2) // Outputs WALL [a] [b] too since
 
 // invalidate the wall asset using its cache key
-assets.invalidate('wall/WALL') 
-await assets.load('wall/WALL') // causes wall/WALL to be rebuilt but not brick/a or brick/b
+assets.invalidate({type: 'wall', name: 'WALL'}) 
+await assets.load({type: 'wall', name: 'WALL'}) // causes wall/WALL to be rebuilt but not brick/a or brick/b
 
-assets.invalidate('brick/a') 
-await assets.load('wall/WALL') // causes brick/a and wall/WALL to be rebuilt but not brick/b
+assets.invalidate({type: 'brick', name: 'a'}) 
+await assets.load({type: 'wall', name: 'WALL'}) // causes brick/a and wall/WALL to be rebuilt but not brick/b
+
 ```
-
-## API
-
-`new Lasset(offers?: Record<string, Loader>)`
-
-Constructs a Lasset instance that can be used to load offered asset types.
-
-`offer(typeName: string, loader: Loader): void`
-
-Registers an asset type for loading later.
-
-`load(cacheKey: string) : Promise<any>`
-`load(typeName: string, target: string): Promise<any>`
-
-Loads the targetted instance from the cache or builds it if missing.
-
-`invalidate(cacheKey: string): void`
-`invalidate(typeName: string, target: string): void`
-
-Invalidates the targetted record and any records that depend on it directly or indirectly.

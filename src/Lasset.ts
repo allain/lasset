@@ -1,72 +1,96 @@
-type Loader = (typeName: string, target: any) => Promise<any>
-type Resolver = (target: any, lasset: Loader) => Promise<any>
+import { HashMap } from './HashMap.js'
+import { HashSet } from './HashSet.js'
+
+import hashObject from 'object-hash'
+
+export type Address = { type: string } & Record<string, any>
+export type TypeLoader = (props: Record<any, string>) => Promise<any>
+export type Builder = (
+  address: Address,
+  lasset: (address: Address) => Promise<any>
+) => Promise<any>
+
+class AddressSet extends HashSet<Address> {
+  constructor() {
+    super(hashObject)
+  }
+}
+class AddressMap<V = any> extends HashMap<Address, V> {
+  constructor() {
+    super(hashObject)
+  }
+}
 
 interface CacheValue {
   value: Promise<any>
-  target: string
-  deps: Set<string>
+  address: Address
+  deps: AddressSet
   expires?: number
 }
 
 export class Lasset {
-  _types: Map<string, Resolver>
-  _cache: Map<any, CacheValue>
+  private _factories: Map<string, Builder>
+  private _cache: AddressMap<CacheValue>
+  private _loaders: Record<string, TypeLoader>
 
-  constructor(offers: Record<string, Resolver> = {}) {
-    this._types = new Map(Object.entries(offers))
-    this._cache = new Map()
+  constructor(factories: Record<string, Builder> = {}) {
+    this._factories = new Map(Object.entries(factories))
+    this._loaders = Object.fromEntries(
+      Array.from(this._factories.keys()).map((name) => [
+        name,
+        (props: Record<string, any>) => this.load({ type: name, ...props })
+      ])
+    )
+    this._cache = new AddressMap()
   }
 
-  offer(typeName: string, handler: Resolver) {
-    this._types.set(typeName, handler)
+  get loaders() {
+    return this._loaders
   }
 
-  load(typeName: string, target: any): Promise<any> {
-    let cacheKey: string
-    cacheKey = typeName + '/' + JSON.stringify(target)
-
-    if (!this._types.has(typeName))
-      throw new Error('no loader defined for type: ' + typeName)
-
-    if (this._cache.has(cacheKey)) {
-      const cached = this._cache.get(cacheKey)
+  load(address: Address): Promise<any> {
+    if (this._cache.has(address)) {
+      const cached = this._cache.get(address)
       if (!cached.expires || cached.expires > Date.now()) {
         return cached.value
       }
     }
 
-    const resolver = this._types.get(typeName)
+    if (!this._factories.has(address.type))
+      throw new Error('no loader defined for type: ' + address.type)
 
-    const deps = new Set<string>()
-    const resolved = resolver(target, (typeName: string, target: any) => {
-      const depKey = typeName + '/' + JSON.stringify(target)
-      if (this._cache.has(depKey)) {
-        this._cache.get(depKey).deps.add(cacheKey)
+    const resolver = this._factories.get(address.type)
+
+    const deps = new AddressSet()
+    const resolved = resolver(address, (depAddress: Address) => {
+      if (this._cache.has(depAddress)) {
+        this._cache.get(depAddress).deps.add(address)
       }
-      return this.load(typeName, target)
+      return this.load(depAddress)
     })
 
-    this._cache.set(cacheKey, {
+    this._cache.set(address, {
       value: resolved,
-      target,
+      address,
       deps
     })
 
     return resolved
   }
 
-  invalidate(cacheKey: string): void
-  invalidate(typeName: string, target: any): void
-  invalidate(...args: string[]): void {
-    const cacheKey =
-      args.length === 2 ? args[0] + '/' + JSON.stringify(args[1]) : args[0]
-    if (!this._cache.has(cacheKey)) return
-
-    const cached = this._cache.get(cacheKey)
-    this._cache.delete(cacheKey)
-
-    for (const dep of cached.deps) {
-      this.invalidate(dep)
+  invalidate(address: Address): void
+  invalidate(addresses: Iterable<Address>): void
+  invalidate(target): void {
+    if (target[Symbol.iterator]) {
+      for (const t of target) {
+        this.invalidate(t)
+      }
+      return
+    }
+    const cached = this._cache.get(target)
+    if (cached) {
+      this._cache.delete(target)
+      this.invalidate(cached.deps)
     }
   }
 }

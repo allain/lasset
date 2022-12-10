@@ -4,11 +4,17 @@ specifiers:
   '@types/chai': ^4.3.4
   '@types/mocha': ^10.0.1
   '@types/node': ^18.11.12
+  '@types/object-hash': ^3.0.1
   c8: ^7.12.0
   chai: ^4.3.7
   mocha: ^10.1.0
+  object-hash: ^3.0.0
   ts-node: ^10.9.1
   typescript: ^4.9.4
+
+dependencies:
+  '@types/object-hash': 3.0.1
+  object-hash: 3.0.0
 
 devDependencies:
   '@types/chai': 4.3.4
@@ -92,6 +98,10 @@ packages:
   /@types/node/18.11.12:
     resolution: {integrity: sha512-FgD3NtTAKvyMmD44T07zz2fEf+OKwutgBCEVM8GcvMGVGaDktiLNTDvPwC/LUe3PinMW+X6CuLOF2Ui1mAlSXg==}
     dev: true
+
+  /@types/object-hash/3.0.1:
+    resolution: {integrity: sha512-AeyooJR4pesRnPLXONFEpxrdvwYVkBiq26j4Uo4QYcJO2FQhAFmHHWBfRpEzwMtItz7q9JiD50s7HDbHS7PleQ==}
+    dev: false
 
   /acorn-walk/8.2.0:
     resolution: {integrity: sha512-k+iyHEuPgSw6SbuDpGQM+06HQUa04DZ3o+F6CSzXMvvI5KMvnaEqXe+YVe555R9nn6GPt404fos4wcgpw12SDA==}
@@ -593,6 +603,11 @@ packages:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /object-hash/3.0.0:
+    resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
+    engines: {node: '>= 6'}
+    dev: false
 
   /once/1.4.0:
     resolution: {integrity: sha1-WDsap3WWHUsROsF9nFC6753Xa9E=}

@@ -84,7 +84,7 @@ export class Lasset {
   invalidate(target): void {
     if (typeof target === 'function') {
       for (const [key, cached] of this._cache.entries()) {
-        if (target(cached.address)) {
+        if (target(key)) {
           this._cache.delete(key)
           this.invalidate(cached.deps)
         }

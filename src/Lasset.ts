@@ -61,18 +61,22 @@ export class Lasset {
 
     const resolver = this._factories.get(address.type)
 
-    const deps = new AddressSet()
     const resolved = resolver(address, (depAddress: Address) => {
-      if (this._cache.has(depAddress)) {
-        this._cache.get(depAddress).deps.add(address)
+      let cached = this._cache.get(depAddress)
+      if (!cached) {
+        this.load(depAddress)
+        cached = this._cache.get(depAddress)
       }
-      return this.load(depAddress)
+
+      cached.deps.add(address)
+
+      return cached.value
     })
 
     this._cache.set(address, {
       value: resolved,
       address,
-      deps
+      deps: new AddressSet()
     })
 
     return resolved

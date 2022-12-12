@@ -7,7 +7,7 @@ export type Address = { type: string } & Record<string, any>
 export type TypeLoader = (props: Record<any, string>) => Promise<any>
 export type Builder = (
   address: Address,
-  lasset: (address: Address) => Promise<any>
+  load: (address: Address) => Promise<any>
 ) => Promise<any>
 
 class AddressSet extends HashSet<Address> {
@@ -78,10 +78,18 @@ export class Lasset {
     return resolved
   }
 
+  invalidate(fn: (address: Address) => boolean): void
   invalidate(address: Address): void
   invalidate(addresses: Iterable<Address>): void
   invalidate(target): void {
-    if (target[Symbol.iterator]) {
+    if (typeof target === 'function') {
+      for (const [key, cached] of this._cache.entries()) {
+        if (target(cached.address)) {
+          this._cache.delete(key)
+          this.invalidate(cached.deps)
+        }
+      }
+    } else if (target[Symbol.iterator]) {
       for (const t of target) {
         this.invalidate(t)
       }

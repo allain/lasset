@@ -99,6 +99,19 @@ describe('Lasset', () => {
     expect(time1).not.to.equal(time2)
   })
 
+  it('can invalidate using function', async () => {
+    const l = new Lasset({
+      async random() {
+        return Math.random()
+      }
+    })
+
+    const time1 = await l.load({ type: 'random', name: 'a' })
+    l.invalidate((address) => address.type === 'random')
+    const time2 = await l.load({ type: 'random', name: 'a' })
+    expect(time1).not.to.equal(time2)
+  })
+
   it('cascades invalidations', async () => {
     const l = new Lasset({
       async lower({ name }) {

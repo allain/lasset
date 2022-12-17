@@ -155,18 +155,4 @@ describe('Lasset', () => {
     const wall = await assets.load({ type: 'wall', name: 'WALL' })
     expect(wall).to.equal('WALL [a] [b]')
   })
-
-  it('exposes loaders helper', async () => {
-    const assets = new Lasset({
-      async echo(address) {
-        return address
-      }
-    })
-
-    expect(assets.loaders.echo).to.be.a('function')
-    expect(await assets.loaders.echo({ name: 'test' })).to.deep.equal({
-      type: 'echo',
-      name: 'test'
-    })
-  })
 })

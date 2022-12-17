@@ -4,11 +4,8 @@ import { HashSet } from './HashSet.js'
 import hashObject from 'object-hash'
 
 export type Address = { type: string } & Record<string, any>
-export type TypeLoader = (props: Record<any, string>) => Promise<any>
-export type Builder = (
-  address: Address,
-  load: (address: Address) => Promise<any>
-) => Promise<any>
+export type Loader = (address: Address) => Promise<any>
+export type Builder = (address: Address, load: Loader) => Promise<any>
 
 class AddressSet extends HashSet<Address> {
   constructor() {
@@ -31,21 +28,10 @@ interface CacheValue {
 export class Lasset {
   private _factories: Map<string, Builder>
   private _cache: AddressMap<CacheValue>
-  private _loaders: Record<string, TypeLoader>
 
   constructor(factories: Record<string, Builder> = {}) {
     this._factories = new Map(Object.entries(factories))
-    this._loaders = Object.fromEntries(
-      Array.from(this._factories.keys()).map((name) => [
-        name,
-        (props: Record<string, any>) => this.load({ type: name, ...props })
-      ])
-    )
     this._cache = new AddressMap()
-  }
-
-  get loaders() {
-    return this._loaders
   }
 
   load(address: Address): Promise<any> {

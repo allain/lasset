@@ -25,13 +25,29 @@ interface CacheValue {
   expires?: number
 }
 
+export interface Logger {
+  debug(message: string, ...args: any[]): void
+}
+
+export type LassetOptions = Partial<{
+  logger: Logger
+}>
+
+const silentLogger = {
+  debug() {}
+}
 export class Lasset {
   private _factories: Map<string, Builder>
   private _cache: AddressMap<CacheValue>
+  private _logger: Logger
 
-  constructor(factories: Record<string, Builder> = {}) {
+  constructor(
+    factories: Record<string, Builder> = {},
+    options: LassetOptions = {}
+  ) {
     this._factories = new Map(Object.entries(factories))
     this._cache = new AddressMap()
+    this._logger = options.logger ?? silentLogger
   }
 
   load(address: Address): Promise<any> {
@@ -71,10 +87,11 @@ export class Lasset {
   invalidate(fn: (address: Address) => boolean): void
   invalidate(address: Address): void
   invalidate(addresses: Iterable<Address>): void
-  invalidate(target): void {
+  invalidate(target: any): void {
     if (typeof target === 'function') {
       for (const [key, cached] of this._cache.entries()) {
         if (target(key)) {
+          this._logger.debug('invalidated: %o', target)
           this._cache.delete(key)
           this.invalidate(cached.deps)
         }
@@ -85,8 +102,10 @@ export class Lasset {
       }
       return
     }
+
     const cached = this._cache.get(target)
     if (cached) {
+      this._logger.debug('invalidated: %o', target)
       this._cache.delete(target)
       this.invalidate(cached.deps)
     }

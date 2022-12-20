@@ -91,7 +91,7 @@ export class Lasset {
     if (typeof target === 'function') {
       for (const [key, cached] of this._cache.entries()) {
         if (target(key)) {
-          this._logger.debug('invalidated: %o', target)
+          this._logger.debug('invalidated: %o', key)
           this._cache.delete(key)
           this.invalidate(cached.deps)
         }

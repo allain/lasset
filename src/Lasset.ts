@@ -88,26 +88,44 @@ export class Lasset {
   invalidate(address: Address): void
   invalidate(addresses: Iterable<Address>): void
   invalidate(target: any): void {
+    this._invalidate(target, new AddressSet())
+  }
+
+  // Private invalidate that keeps cycles from happening
+  private _invalidate(
+    fn: (address: Address) => boolean,
+    invalidated: AddressSet
+  ): void
+  private _invalidate(address: Address, invalidated: AddressSet): void
+  private _invalidate(
+    addresses: Iterable<Address>,
+    invalidated: AddressSet
+  ): void
+  private _invalidate(target: any, invalidated: AddressSet): void {
     if (typeof target === 'function') {
       for (const [key, cached] of this._cache.entries()) {
-        if (target(key)) {
+        if (target(key) && !invalidated.has(key)) {
           this._logger.debug('invalidated: %o', key)
           this._cache.delete(key)
-          this.invalidate(cached.deps)
+          invalidated.add(key)
+          this._invalidate(cached.deps, invalidated)
         }
       }
     } else if (target[Symbol.iterator]) {
       for (const t of target) {
-        this.invalidate(t)
+        this._invalidate(t, invalidated)
       }
       return
     }
 
     const cached = this._cache.get(target)
     if (cached) {
-      this._logger.debug('invalidated: %o', target)
-      this._cache.delete(target)
-      this.invalidate(cached.deps)
+      if (!invalidated.has(target)) {
+        this._logger.debug('invalidated: %o', target)
+        this._cache.delete(target)
+        invalidated.add(target)
+      }
+      this._invalidate(cached.deps, invalidated)
     }
   }
 }

@@ -86,6 +86,23 @@ describe('Lasset', () => {
     expect(upper).to.equal(lower.toUpperCase())
   })
 
+  it('has built in type for recording touches', async () => {
+    const l = new Lasset({
+      async test({}, load) {
+        load({ type: 'touch', path: 'PATH' })
+        return Math.random()
+      }
+    })
+
+    const a = await l.load({ type: 'test' })
+    const a2 = await l.load({ type: 'test' })
+    expect(a).to.equal(a2)
+
+    l.invalidate((address) => address.path === 'PATH')
+    const a3 = await l.load({ type: 'test' })
+    expect(a3).not.to.equal(a)
+  })
+
   it('can invalidate keys in cache', async () => {
     const l = new Lasset({
       async random() {

@@ -46,6 +46,7 @@ export class Lasset {
     options: LassetOptions = {}
   ) {
     this._factories = new Map(Object.entries(factories))
+    this._factories.set('touch', async () => true)
     this._cache = new AddressMap()
     this._logger = options.logger ?? silentLogger
   }

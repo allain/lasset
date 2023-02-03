@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import { setTimeout } from 'timers/promises'
 
 import { Lasset } from '../src/Lasset.js'
 
@@ -69,6 +70,24 @@ describe('Lasset', () => {
     const aTime1 = await l.load({ type: 'time', name: 'a' })
     const aTime2 = await l.load({ type: 'time', name: 'a' })
     expect(aTime1).to.equal(aTime2)
+  })
+
+  it('supports expiring values in cache', async () => {
+    const l = new Lasset({
+      time: {
+        async build({ name }) {
+          return `${name} ${Date.now()}`
+        },
+        options: {
+          ttl: 1
+        }
+      }
+    })
+
+    const aTime1 = await l.load({ type: 'time', name: 'a' })
+    await setTimeout(5)
+    const aTime2 = await l.load({ type: 'time', name: 'a' })
+    expect(aTime1).not.to.equal(aTime2)
   })
 
   it('can load assets from resolvers', async () => {

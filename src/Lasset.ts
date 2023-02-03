@@ -5,7 +5,13 @@ import hashObject from 'object-hash'
 
 export type Address = { type: string } & Record<string, any>
 export type Loader = (address: Address) => Promise<any>
-export type Builder = (address: Address, load: Loader) => Promise<any>
+export type BuilderFn = (address: Address, load: Loader) => Promise<any>
+export type Builder = {
+  build: BuilderFn
+  options?: {
+    ttl?: number
+  }
+}
 
 class AddressSet extends HashSet<Address> {
   constructor() {
@@ -36,17 +42,29 @@ export type LassetOptions = Partial<{
 const silentLogger = {
   debug() {}
 }
+
+type FactoryOptions = {
+  ttl: number
+}
+
 export class Lasset {
   private _factories: Map<string, Builder>
   private _cache: AddressMap<CacheValue>
   private _logger: Logger
 
   constructor(
-    factories: Record<string, Builder> = {},
+    factories: Record<string, BuilderFn | Builder> = {},
     options: LassetOptions = {}
   ) {
-    this._factories = new Map(Object.entries(factories))
-    this._factories.set('touch', async () => true)
+    this._factories = new Map<string, Builder>()
+    for (const [name, config] of Object.entries(factories)) {
+      if (typeof config === 'function') {
+        this._factories.set(name, { build: config })
+      } else {
+        this._factories.set(name, config)
+      }
+    }
+    this._factories.set('touch', { build: async () => true })
     this._cache = new AddressMap()
     this._logger = options.logger ?? silentLogger
   }
@@ -62,9 +80,9 @@ export class Lasset {
     if (!this._factories.has(address.type))
       throw new Error('no loader defined for type: ' + address.type)
 
-    const resolver = this._factories.get(address.type)
+    const builder = this._factories.get(address.type)
 
-    const resolved = resolver(address, (depAddress: Address) => {
+    const resolved = builder.build(address, (depAddress: Address) => {
       let cached = this._cache.get(depAddress)
       if (!cached) {
         this.load(depAddress)
@@ -76,11 +94,16 @@ export class Lasset {
       return cached.value
     })
 
-    this._cache.set(address, {
+    const cacheValue: CacheValue = {
       value: resolved,
       address,
       deps: new AddressSet()
-    })
+    }
+    if (builder.options?.ttl) {
+      cacheValue.expires = Date.now() + builder.options.ttl
+    }
+
+    this._cache.set(address, cacheValue)
 
     return resolved
   }

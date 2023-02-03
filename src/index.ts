@@ -1,1 +1,1 @@
-export { Lasset, Address, Builder, Loader } from './Lasset.js'
+export { Lasset, Address, BuilderFn as Builder, Loader } from './Lasset.js'

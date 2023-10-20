@@ -70,11 +70,9 @@ export class Lasset {
   }
 
   load(address: Address): Promise<any> {
-    if (this._cache.has(address)) {
-      const cached = this._cache.get(address)
-      if (!cached.expires || cached.expires > Date.now()) {
-        return cached.value
-      }
+    const cached = this._cache.get(address)
+    if (cached && (!cached.expires || cached.expires > Date.now())) {
+      return cached.value
     }
 
     if (!this._factories.has(address.type))
